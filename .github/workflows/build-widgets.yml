@@ -37,7 +37,7 @@ jobs:
           R -e "install.packages(c('htmlwidgets', 'DT', 'plotly'), repos='https://cloud.r-project.org')"
 
       - name: Run R script to generate widgets
-        run: Rscript my_widgets.R # Execute your R script
+        run: Rscript Afikseis_Touristwn.R
 
       - name: Configure Git for Deployment
         run: |
