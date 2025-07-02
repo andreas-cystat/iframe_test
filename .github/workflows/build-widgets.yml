@@ -1,8 +1,8 @@
 name: Generate R Widgets and Deploy to GitHub Pages
 
 on:
-#   push:
-#     branches: [ main ]
+  push:
+    branches: [ main ]
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *' # Runs daily at midnight UTC
@@ -29,12 +29,8 @@ jobs:
           r-version: '4.2.0'
 
       - name: Install R dependencies
-        run: |
-          # If using renv:
-          # R -e "install.packages('renv', repos='https://cloud.r-project.org')"
-          # R -e "renv::restore()"
-          # If not using renv, install packages directly:
-          R -e "install.packages(c('htmlwidgets', 'DT', 'plotly'), repos='https://cloud.r-project.org')"
+        run:
+          R -e "install.packages(c('httr', 'jsonlite', 'dplyr', 'tidyr', 'plotly', 'htmlwidgets', 'here'), repos='https://cloud.r-project.org')"
 
       - name: Run R script to generate widgets
         run: Rscript Afikseis_Touristwn.R
@@ -43,7 +39,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs # Stage the generated docs folder
+          git add docs backups
           git commit -m "Generate HTML widgets for GitHub Pages" || echo "No changes to commit"
 
       - name: Upload artifact for GitHub Pages
