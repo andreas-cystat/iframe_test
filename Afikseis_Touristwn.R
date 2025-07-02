@@ -4,15 +4,15 @@ library(dplyr)
 library(tidyr)
 library(plotly)
 library(htmlwidgets)
+library(here)  
 
-# Setup paths
-log_dir <- "C:/Users/akonomi/Desktop/Interactive_graphs/R/Logs_ΑφίξειςΤουριστών"
+# Setup paths 
+log_dir <- here("Logs_ΑφίξειςΤουριστών")
 if (!dir.exists(log_dir)) dir.create(log_dir)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
-logfile_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))  # daily log
-log_file <- "C:/Users/akonomi/Desktop/Interactive_graphs/R/Logs_ΑφίξειςΤουριστών/log.txt"
-
+logfile_path <- here("Logs_ΑφίξειςΤουριστών", paste0("log_", today_str, ".txt"))
+log_file <- here("Logs_ΑφίξειςΤουριστών", "log.txt")
 
 # API URL
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
@@ -160,13 +160,13 @@ if (update_status == "Widget updated with new data") {
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
   
-  output_path <- paste0("C:/Users/akonomi/Desktop/Interactive_graphs/R/Αφίξεις Τουριστών_", today_str, ".html")
+  output_path <- here(paste0("Αφίξεις Τουριστών_", today_str, ".html"))
   saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
 }
 
-# Logging block 
-log_con <- file(logfile_path, open = "wt")  # "wt" = write text mode
+# Logging block
+log_con <- file(logfile_path, open = "wt")
 sink(log_con, type = "output")
 sink(log_con, type = "message")
 
@@ -176,4 +176,3 @@ cat(format(Sys.time()), " | ", update_status, "\n")
 sink(type = "message")
 sink(type = "output")
 close(log_con)
-
