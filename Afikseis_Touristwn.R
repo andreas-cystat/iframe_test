@@ -7,12 +7,12 @@ library(htmlwidgets)
 library(here)  
 
 # Setup paths 
-log_dir <- here("Logs_ΑφίξειςΤουριστών")
+log_dir <- here("Logs_Afikseis_Touristwn")
 if (!dir.exists(log_dir)) dir.create(log_dir)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
-logfile_path <- here("Logs_ΑφίξειςΤουριστών", paste0("log_", today_str, ".txt"))
-log_file <- here("Logs_ΑφίξειςΤουριστών", "log.txt")
+logfile_path <- here("Logs_Afikseis_Touristwn", paste0("log_", today_str, ".txt"))
+log_file <- here("Logs_Afikseis_Touristwn", "log.txt")
 
 # API URL
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
