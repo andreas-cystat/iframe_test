@@ -1,4 +1,4 @@
-
+library(here) 
 # --- Setup paths ---
 log_dir <- here("Logs_Afikseis_Touristwn")
 if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
