@@ -160,12 +160,9 @@ if (update_status == "Widget updated with new data") {
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
   
-  output_path <- here("docs", paste0("tourists", ".html"))
+  output_path <- file.path("Logs_Afikseis_Touristwn", paste0("tourists_", today_str, ".html"))
   saveWidget(fig, output_path, selfcontained = TRUE)
-  
-  output_path_backup <- here("backups", paste0("tourists_", today_str, ".txt"))
-  saveWidget(fig, output_path_backup, selfcontained = TRUE)
-  
+
   message("Widget saved to ", output_path)
 }
 
