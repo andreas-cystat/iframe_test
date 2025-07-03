@@ -9,6 +9,14 @@ jobs:
   build-widgets:
     runs-on: ubuntu-latest
 
+    env:
+      RSPM: https://packagemanager.rstudio.com/cran/__linux__/jammy/latest
+      R_LIBS_USER: /home/runner/work/_temp/Library
+      TZ: UTC
+      _R_CHECK_SYSTEM_CLOCK_: FALSE
+      NOT_CRAN: true
+      RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.rstudio.com/cran/__linux__/jammy/latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
