@@ -1,10 +1,4 @@
 library(here) 
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(tidyr)
-library(plotly)
-library(htmlwidgets)
 
 # --- Setup paths ---
 log_dir <- here("Logs_Afikseis_Touristwn")
