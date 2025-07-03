@@ -3,9 +3,6 @@ name: Build Widgets
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
-  # schedule:
-  # - cron: '0 0 * * *' # Runs daily at midnight UTC
 
 permissions:
   contents: write
@@ -52,7 +49,6 @@ jobs:
         run: Rscript Afikseis_Touristwn.R
 
       - name: Commit generated files
-      - name: Configure Git for Deployment
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
