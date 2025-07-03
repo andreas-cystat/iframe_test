@@ -1,4 +1,3 @@
-install.packages(c("httr", "jsonlite", "dplyr", "tidyr", "plotly", "htmlwidgets", "here"))
 
 library(httr)
 library(jsonlite)
