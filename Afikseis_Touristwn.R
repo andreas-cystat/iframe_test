@@ -7,22 +7,6 @@ library(plotly)
 library(htmlwidgets)
 library(here)
 
-Attaching package: ‘dplyr’
-
-The following objects are masked from ‘package:stats’:
-
-    filter, lag
-
-The following objects are masked from ‘package:base’:
-
-    intersect, setdiff, setequal, union
-
-Error in layout(., updatemenus = list(list(type = "dropdown", active = 0,  : 
-  unused arguments (updatemenus = list(list(type = "dropdown", active = 0, buttons = list(list(label = "Αριθμός", method = "update", args = list(list(visible = c(TRUE, FALSE)), list(yaxis = list(title = "Αριθμός Αφίξεων")))), list(label = "Ετήσια μεταβολή (%)", method = "update", args = list(list(visible = c(FALSE, TRUE)), list(yaxis = list(title = "Ετήσια μεταβολή (%)"))))))), xaxis = list(title = "Μήνας", range = c(initial_start, initial_end), fixedrange = FALSE, 
-    tickangle = -45, tickformat = "%b %Y", dtick = "M4"), yaxis = list(title = "Αριθμός Αφίξεων"))
-Calls: %>%
-Execution halted
-Error: Process completed with exit code 1.
 
 # --- Setup paths ---
 log_dir <- here::here("Logs_Afikseis_Touristwn")
