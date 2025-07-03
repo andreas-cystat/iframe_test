@@ -1,15 +1,22 @@
-library(here) 
-library(httr)
-library(jsonlite)
+# --- Load libraries safely ---
+if (!requireNamespace("httr", quietly = TRUE)) stop("httr not available")
+if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite not available")
+if (!requireNamespace("here", quietly = TRUE)) stop("here not available")
+if (!requireNamespace("dplyr", quietly = TRUE)) stop("dplyr not available")
+if (!requireNamespace("tidyr", quietly = TRUE)) stop("tidyr not available")
+if (!requireNamespace("plotly", quietly = TRUE)) stop("plotly not available")
+if (!requireNamespace("htmlwidgets", quietly = TRUE)) stop("htmlwidgets not available")
+
+library(here)
 library(dplyr)
 library(tidyr)
 library(plotly)
 library(htmlwidgets)
 
 # --- Setup paths ---
-log_dir <- here("Logs_Afikseis_Touristwn")
+log_dir <- here::here("Logs_Afikseis_Touristwn")
 if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
-docs_dir <- here("docs")
+docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
@@ -20,9 +27,9 @@ log_file <- file.path(log_dir, "log.txt")
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
 
 # --- Fetch metadata ---
-metadata <- GET(api_url)
-stop_for_status(metadata, task = "fetch metadata")
-metadata_json <- content(metadata, as = "parsed")
+metadata <- httr::GET(api_url)
+httr::stop_for_status(metadata, task = "fetch metadata")
+metadata_json <- httr::content(metadata, as = "parsed")
 
 year_dimension <- metadata_json$variables[[1]]
 values <- metadata_json$variables[[2]]
@@ -53,9 +60,9 @@ query_body <- list(
 )
 
 # --- Fetch data ---
-response <- POST(api_url, body = query_body, encode = "json")
-stop_for_status(response, task = "fetch data")
-data_json <- content(response, as = "parsed", simplifyDataFrame = TRUE)
+response <- httr::POST(api_url, body = query_body, encode = "json")
+httr::stop_for_status(response, task = "fetch data")
+data_json <- httr::content(response, as = "parsed", simplifyDataFrame = TRUE)
 
 if (is.null(data_json$data)) stop("No data returned from API.")
 data_values <- data_json$data
@@ -117,8 +124,8 @@ if (update_status == "Widget updated with new data") {
   initial_start <- as.character(df_initial$ΜΗΝΑΣ[1])
   initial_end <- as.character(df_initial$ΜΗΝΑΣ[nrow(df_initial)])
 
-  fig <- plot_ly() %>%
-    add_trace(
+  fig <- plotly::plot_ly() %>%
+    plotly::add_trace(
       data = df_arithmos,
       x = ~ΜΗΝΑΣ,
       y = ~value,
@@ -128,7 +135,7 @@ if (update_status == "Widget updated with new data") {
       line = list(color = '#1f77b4'),
       visible = TRUE
     ) %>%
-    add_trace(
+    plotly::add_trace(
       data = df_change,
       x = ~ΜΗΝΑΣ,
       y = ~value,
@@ -168,12 +175,12 @@ if (update_status == "Widget updated with new data") {
   # Ensure output folder exists and save widget
   output_path <- file.path(log_dir, paste0("tourists_", today_str, ".html"))
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  saveWidget(fig, output_path, selfcontained = TRUE)
+  htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
 
   output_path <- file.path(docs_dir, paste0("tourists.html"))
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  saveWidget(fig, output_path, selfcontained = TRUE)
+  htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
 }
 
