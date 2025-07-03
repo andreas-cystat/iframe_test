@@ -1,12 +1,3 @@
-.libPaths("/home/runner/work/_temp/Library")
-
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(tidyr)
-library(plotly)
-library(htmlwidgets)
-library(here)
 
 # --- Setup paths ---
 log_dir <- here("Logs_Afikseis_Touristwn")
