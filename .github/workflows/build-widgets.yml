@@ -34,7 +34,6 @@ jobs:
             libssl-dev \
             libxml2-dev \
             pandoc \
-            pandoc-citeproc \
             build-essential
 
       - name: Install R dependencies
