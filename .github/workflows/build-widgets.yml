@@ -1,8 +1,7 @@
 name: Build Widgets
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -55,25 +54,3 @@ jobs:
           git add docs Logs_Afikseis_Touristwn
           git commit -m "Generate HTML widgets for GitHub Pages" || echo "No changes to commit"
           git push origin main || echo "No changes to push"
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'docs' # Upload the 'docs' folder where widgets are saved
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v3
