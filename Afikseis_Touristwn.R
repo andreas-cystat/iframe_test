@@ -9,6 +9,8 @@ library(htmlwidgets)
 # --- Setup paths ---
 log_dir <- here("Logs_Afikseis_Touristwn")
 if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
+docs_dir <- here("docs")
+if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
 logfile_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))
@@ -165,6 +167,11 @@ if (update_status == "Widget updated with new data") {
 
   # Ensure output folder exists and save widget
   output_path <- file.path(log_dir, paste0("tourists_", today_str, ".html"))
+  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
+  saveWidget(fig, output_path, selfcontained = TRUE)
+  message("Widget saved to ", output_path)
+
+  output_path <- file.path(docs_dir, paste0("tourists.html"))
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
   saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)

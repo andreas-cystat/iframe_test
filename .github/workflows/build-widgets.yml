@@ -49,7 +49,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs backups
+          git add docs Logs_Afikseis_Touristwn
           git commit -m "Generate HTML widgets for GitHub Pages" || echo "No changes to commit"
 
       - name: Upload artifact for GitHub Pages
