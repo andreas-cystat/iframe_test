@@ -1,3 +1,26 @@
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - name: Install packages
+        run: |
+          Rscript -e 'install.packages(c("httr", "jsonlite", "dplyr", "tidyr", "plotly", "htmlwidgets", "here"))'
+
+      - name: Run script
+        run: |
+          Rscript Afikseis_Touristwn.R
+
 install.packages(c("httr", "jsonlite", "dplyr", "tidyr", "plotly", "htmlwidgets", "here"))
 
 library(httr)
