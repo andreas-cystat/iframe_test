@@ -1,17 +1,5 @@
-# --- Load libraries safely ---
-if (!requireNamespace("httr", quietly = TRUE)) stop("httr not available")
-if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite not available")
-if (!requireNamespace("here", quietly = TRUE)) stop("here not available")
-if (!requireNamespace("dplyr", quietly = TRUE)) stop("dplyr not available")
-if (!requireNamespace("tidyr", quietly = TRUE)) stop("tidyr not available")
-if (!requireNamespace("plotly", quietly = TRUE)) stop("plotly not available")
-if (!requireNamespace("htmlwidgets", quietly = TRUE)) stop("htmlwidgets not available")
 
 library(here)
-library(dplyr)
-library(tidyr)
-library(plotly)
-library(htmlwidgets)
 
 # --- Setup paths ---
 log_dir <- here::here("Logs_Afikseis_Touristwn")
