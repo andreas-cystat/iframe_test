@@ -1,7 +1,11 @@
 
-library(here)
+library(httr)
+library(jsonlite)
 library(dplyr)
+library(tidyr)
 library(plotly)
+library(htmlwidgets)
+library(here)
 
 Attaching package: ‘dplyr’
 
