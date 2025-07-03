@@ -1,7 +1,8 @@
 name: Build Widgets
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
 
 permissions:
   contents: write
