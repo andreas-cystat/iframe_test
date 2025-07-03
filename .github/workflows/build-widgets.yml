@@ -4,6 +4,13 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+  # schedule:
+  # - cron: '0 0 * * *' # Runs daily at midnight UTC
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   build-widgets:
@@ -42,10 +49,10 @@ jobs:
           # the RSPM env var if set. Let's make sure it's used.
           R -e "install.packages(c('httr', 'jsonlite', 'dplyr', 'tidyr', 'plotly', 'htmlwidgets', 'here'), repos=Sys.getenv('RSPM'))"
 
-      - name: Run R script to generate widgets
+      - name: Run R script
         run: Rscript Afikseis_Touristwn.R
 
-      - name: Run R script
+      - name: Configure Git for Deployment
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
