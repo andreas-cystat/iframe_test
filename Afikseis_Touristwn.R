@@ -1,4 +1,3 @@
-
 library(httr)
 library(jsonlite)
 library(dplyr)
@@ -6,7 +5,6 @@ library(tidyr)
 library(plotly)
 library(htmlwidgets)
 library(here)
-
 
 # --- Setup paths ---
 log_dir <- here::here("Logs_Afikseis_Touristwn")
@@ -17,6 +15,7 @@ if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 today_str <- format(Sys.Date(), "%Y%m%d")
 logfile_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))
 log_file <- file.path(log_dir, "log.txt")
+data_snapshot_path <- file.path(log_dir, "last_data.rds")  
 
 # --- API URL ---
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
@@ -38,17 +37,11 @@ query_body <- list(
   query = list(
     list(
       code = year_dimension$code,
-      selection = list(
-        filter = "item",
-        values = year_codes
-      )
+      selection = list(filter = "item", values = year_codes)
     ),
     list(
       code = values$code,
-      selection = list(
-        filter = "item",
-        values = list(measure_code_arithmos[[1]], measure_code_change[[1]])
-      )
+      selection = list(filter = "item", values = list(measure_code_arithmos[[1]], measure_code_change[[1]]))
     )
   ),
   response = list(format = "json")
@@ -90,29 +83,18 @@ df <- df %>%
 df_arithmos <- df %>% filter(measure == "Αριθμός")
 df_change <- df %>% filter(measure == "Ετήσια μεταβολή (%)")
 
-# --- Count current data ---
-current_data_points <- nrow(df_arithmos)
+# --- Compare with last saved data frame ---
+df_previous <- if (file.exists(data_snapshot_path)) readRDS(data_snapshot_path) else NULL
+data_changed <- is.null(df_previous) || !identical(df, df_previous)
 
-# --- Function to get last saved count ---
-get_latest_logged_count <- function(log_file_path) {
-  if (!file.exists(log_file_path)) return(0)
-  log_lines <- readLines(log_file_path, warn = FALSE)
-  row_lines <- grep("Total number of rows:", log_lines, value = TRUE)
-  if (length(row_lines) == 0) return(0)
-  last_line <- row_lines[length(row_lines)]
-  match <- regmatches(last_line, regexpr("\\d+", last_line))
-  as.integer(match)
-}
-
-last_saved_count <- get_latest_logged_count(log_file)
-update_status <- if (current_data_points > last_saved_count) {
+update_status <- if (data_changed) {
   "Widget updated with new data"
 } else {
   "No new data"
 }
 
-# --- If new data, generate plot ---
-if (update_status == "Widget updated with new data") {
+# --- If new data, generate plot and save snapshot ---
+if (data_changed) {
   df_filtered <- df_arithmos
   n <- nrow(df_filtered)
   df_initial <- if (n >= 50) df_filtered[(n - 49):n, ] else df_filtered
@@ -177,14 +159,17 @@ if (update_status == "Widget updated with new data") {
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
   htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
+
+  # Save current df snapshot
+  saveRDS(df, data_snapshot_path)
 }
 
 # --- Logging ---
-log_con <- file(logfile_path, open = "wt")
+log_con <- file(logfile_path, open = "at")
 sink(log_con, type = "output")
 sink(log_con, type = "message")
 
-cat(format(Sys.time()), " | Total number of rows: ", current_data_points, "\n")
+cat(format(Sys.time()), " | Total number of rows: ", nrow(df), "\n")
 cat(format(Sys.time()), " | ", update_status, "\n")
 
 sink(type = "message")
