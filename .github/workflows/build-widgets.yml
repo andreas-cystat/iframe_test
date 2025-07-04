@@ -3,10 +3,11 @@ name: Build Widgets
 on:
   schedule:
     - cron: '0 0 * * *' # Runs daily at midnight UTC
+  push:
+    branches: [ main ]
 
 permissions:
   contents: write
-  pages: write
   id-token: write
 
 jobs:
@@ -45,13 +46,41 @@ jobs:
           mkdir -p "$R_LIBS_USER"
           R -e "install.packages(c('httr', 'jsonlite', 'dplyr', 'tidyr', 'plotly', 'htmlwidgets', 'here'), lib = Sys.getenv('R_LIBS_USER'), repos = Sys.getenv('RSPM'))"
 
-      - name: Run R script
-        run: Rscript Afikseis_Touristwn.R
+      - name: Run all R scripts in 'scripts' folder
+        run: |
+          SCRIPT_DIR="scripts"
+          
+          # Check if the scripts directory exists
+          if [ ! -d "$SCRIPT_DIR" ]; then
+            echo "Error: Directory '$SCRIPT_DIR' not found. Please create it or adjust the path."
+            exit 1
+          fi
+
+          # Find all R scripts in the directory (case-insensitive for .R and .r)
+          # Use -maxdepth 1 to only look in the specified directory, not subdirectories
+          # Sort them for consistent execution order
+          R_SCRIPTS=$(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -name "*.R" -o -name "*.r" \) | sort)
+
+          if [ -z "$R_SCRIPTS" ]; then
+            echo "No R scripts found in '$SCRIPT_DIR'. Skipping R script execution."
+          else
+            # Loop through each found script and execute it
+            for script_path in $R_SCRIPTS; do
+              echo "--- Running R script: $script_path ---"
+              Rscript "$script_path"
+              # Check the exit status of the Rscript command
+              if [ $? -ne 0 ]; then
+                echo "--- Error: Script $script_path failed. Aborting further script execution. ---"
+                exit 1 # Fail the job immediately if any script fails
+              fi
+              echo "--- Successfully ran $script_path ---"
+            done
+          fi
 
       - name: Commit generated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs Logs_Afikseis_Touristwn
+          git add docs logs
           git commit -m "Generate HTML widgets for GitHub Pages" || echo "No changes to commit"
           git push origin main || echo "No changes to push"
