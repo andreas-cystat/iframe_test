@@ -1,3 +1,4 @@
+# ---- Load Required Libraries ----
 library(httr)
 library(jsonlite)
 library(dplyr)
@@ -7,14 +8,15 @@ library(htmlwidgets)
 library(here)
 
 # --- Setup paths ---
+log_base_dir <- here::here("Logs")
 log_dir <- here::here("Logs_Afikseis_Touristwn")
 if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
+
 docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
-logfile_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))
-log_file <- file.path(log_dir, "log.txt")
+log_path <- file.path(log_dir, paste0("tourists_log_", today_str, ".txt"))
 
 # --- API URL ---
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
@@ -90,7 +92,7 @@ current_data_points <- nrow(df_arithmos)
 get_latest_logged_count <- function(log_file_path) {
   if (!file.exists(log_file_path)) return(0)
   log_lines <- readLines(log_file_path, warn = FALSE)
-  row_lines <- grep("Total rows:", log_lines, value = TRUE)
+  row_lines <- grep("Total number of rows:", log_lines, value = TRUE)
   if (length(row_lines) == 0) return(0)
   last_line <- row_lines[length(row_lines)]
   match <- regmatches(last_line, regexpr("\\d+", last_line))
@@ -98,7 +100,7 @@ get_latest_logged_count <- function(log_file_path) {
 }
 
 # Compare to previous log
-last_saved_count <- get_latest_logged_count(log_file)
+last_saved_count <- get_latest_logged_count(log_path)
 update_status <- if (current_data_points > last_saved_count) {
   "Widget updated with new data"
 } else {
@@ -161,13 +163,13 @@ if (update_status == "Widget updated with new data") {
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
   
-  output_path <- paste0("docs_dir", today_str, ".html")
+  output_path <- file.path(docs_dir, paste0("tourists_widget_", today_str, ".html"))
   saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
 }
 
 # Logging block 
-log_con <- file(logfile_path, open = "wt")  # "wt" = write text mode
+log_con <- file(log_path, open = "wt")  # "wt" = write text mode
 sink(log_con, type = "output")
 sink(log_con, type = "message")
 
