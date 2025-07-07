@@ -192,7 +192,7 @@ log_messages <- c(
 writeLines(log_messages, log_path)
 
 # Save widget using htmltools 
-combined_path <- file.path(docs_dir, "combined_graphs.html")
+combined_path <- file.path(docs_dir, "combined_graphs_plithismos.html")
 htmltools::save_html(combined_html, file = combined_path)
 
 message("✅ Combined widget saved to: ", combined_path)
