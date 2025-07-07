@@ -15,7 +15,6 @@ if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 today_str <- format(Sys.Date(), "%Y%m%d")
 logfile_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))
 log_file <- file.path(log_dir, "log.txt")
-data_snapshot_path <- file.path(log_dir, "last_data.rds")  
 
 # --- API URL ---
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
@@ -84,25 +83,38 @@ df_arithmos <- df %>% filter(measure == "Αριθμός")
 df_change <- df %>% filter(measure == "Ετήσια μεταβολή (%)")
 
 # --- Compare with last saved data frame ---
-df_previous <- if (file.exists(data_snapshot_path)) readRDS(data_snapshot_path) else NULL
-data_changed <- is.null(df_previous) || !identical(df, df_previous)
+# Count the number of rows
+current_data_points <- nrow(df_arithmos)
 
-update_status <- if (data_changed) {
+# Function to get last saved count
+get_latest_logged_count <- function(log_file_path) {
+  if (!file.exists(log_file_path)) return(0)
+  log_lines <- readLines(log_file_path, warn = FALSE)
+  row_lines <- grep("Total rows:", log_lines, value = TRUE)
+  if (length(row_lines) == 0) return(0)
+  last_line <- row_lines[length(row_lines)]
+  match <- regmatches(last_line, regexpr("\\d+", last_line))
+  as.integer(match)
+}
+
+# Compare to previous log
+last_saved_count <- get_latest_logged_count(log_file)
+update_status <- if (current_data_points > last_saved_count) {
   "Widget updated with new data"
 } else {
   "No new data"
 }
 
-# --- If new data, generate plot and save snapshot ---
-if (data_changed) {
+# If new data, save widget
+if (update_status == "Widget updated with new data") {
   df_filtered <- df_arithmos
   n <- nrow(df_filtered)
   df_initial <- if (n >= 50) df_filtered[(n - 49):n, ] else df_filtered
   initial_start <- as.character(df_initial$ΜΗΝΑΣ[1])
   initial_end <- as.character(df_initial$ΜΗΝΑΣ[nrow(df_initial)])
-
-  fig <- plotly::plot_ly() %>%
-    plotly::add_trace(
+  
+  fig <- plot_ly() %>%
+    add_trace(
       data = df_arithmos,
       x = ~ΜΗΝΑΣ,
       y = ~value,
@@ -112,7 +124,7 @@ if (data_changed) {
       line = list(color = '#1f77b4'),
       visible = TRUE
     ) %>%
-    plotly::add_trace(
+    add_trace(
       data = df_change,
       x = ~ΜΗΝΑΣ,
       y = ~value,
@@ -148,28 +160,18 @@ if (data_changed) {
       ),
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
-
-  # Ensure output folder exists and save widget
-  output_path <- file.path(log_dir, paste0("tourists_", today_str, ".html"))
-  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
+  
+  output_path <- paste0("C:/Users/akonomi/Desktop/Interactive_graphs/R/Αφίξεις Τουριστών_", today_str, ".html")
+  saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
-
-  output_path <- file.path(docs_dir, paste0("tourists.html"))
-  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
-  message("Widget saved to ", output_path)
-
-  # Save current df snapshot
-  saveRDS(df, data_snapshot_path)
 }
 
-# --- Logging ---
-log_con <- file(logfile_path, open = "at")
+# Logging block 
+log_con <- file(logfile_path, open = "wt")  # "wt" = write text mode
 sink(log_con, type = "output")
 sink(log_con, type = "message")
 
-cat(format(Sys.time()), " | Total number of rows: ", nrow(df), "\n")
+cat(format(Sys.time()), " | Total number of rows: ", current_data_points, "\n")
 cat(format(Sys.time()), " | ", update_status, "\n")
 
 sink(type = "message")
