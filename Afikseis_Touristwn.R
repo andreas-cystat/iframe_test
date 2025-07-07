@@ -161,7 +161,7 @@ if (update_status == "Widget updated with new data") {
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
   
-  output_path <- paste0("C:/Users/akonomi/Desktop/Interactive_graphs/R/Αφίξεις Τουριστών_", today_str, ".html")
+  output_path <- paste0("docs_dir", today_str, ".html")
   saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
 }
