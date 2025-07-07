@@ -20,7 +20,6 @@ today_str <- format(Sys.Date(), "%Y%m%d")
 log_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))
 
 # PART 1: POPULATION PLOT
-
 # ---- Population API Info ----
 pop_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Population/1820010G.px"
 pop_metadata <- httr::GET(pop_api_url)
@@ -89,8 +88,12 @@ population_widget <- plotly::plot_ly() %>%
   ) %>%
   config(displayModeBar = FALSE)
 
+output_path <- file.path(docs_dir, "population.html")
+dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
+htmlwidgets::saveWidget(population_widget, output_path, selfcontained = TRUE)
+message("✅ Standalone population widget saved to: ", output_path)
+  
 # PART 2: LIFE EXPECTANCY PLOT
-
 # ---- Life Expectancy API Info ----
 life_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Deaths/1830226G.px"
 life_metadata <- httr::GET(life_api_url)
@@ -167,8 +170,13 @@ life_expectancy_widget <- plotly::plot_ly() %>%
   ) %>%
   config(displayModeBar = FALSE)
 
-# COMBINE AND SAVE
+# Save standalone life expectancy widget
+life_output_path <- file.path(docs_dir, "life_expectancy.html")
+dir.create(dirname(life_output_path), showWarnings = FALSE, recursive = TRUE)
+htmlwidgets::saveWidget(life_expectancy_widget, life_output_path, selfcontained = TRUE)
+message("✅ Standalone life expectancy widget saved to: ", life_output_path)
 
+# COMBINE AND SAVE
 # Ensure fixed sizes to avoid layout issues
 population_widget <- population_widget %>% layout(width = 600, height = 400)
 life_expectancy_widget <- life_expectancy_widget %>% layout(width = 600, height = 400)
@@ -191,7 +199,7 @@ log_messages <- c(
 
 writeLines(log_messages, log_path)
 
-# Save widget using htmltools 
+# Save combined widget using htmltools 
 combined_path <- file.path(docs_dir, "combined_graphs.html")
 htmltools::save_html(combined_html, file = combined_path)
 
