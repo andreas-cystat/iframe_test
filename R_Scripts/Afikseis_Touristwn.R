@@ -162,14 +162,10 @@ if (update_status == "Widget updated with new data") {
       ),
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
-  
-  output_path <- file.path(docs_dir, paste0("tourists_widget_", today_str, ".html"))
-  saveWidget(fig, output_path, selfcontained = TRUE)
-  message("Widget saved to ", output_path)
 
   output_path <- file.path(docs_dir, paste0("tourists.html"))
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  htmlwidgets::saveWidget(p, output_path, selfcontained = TRUE)
+  htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
   message("Widget saved to ", output_path)
 }
 
