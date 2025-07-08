@@ -8,9 +8,8 @@ library(htmlwidgets)
 library(here)
 
 # --- Setup paths ---
-log_base_dir <- here::here("Logs")
-log_dir <- here::here("Logs_Afikseis_Touristwn")
-if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
+log_path <- file.path(here::here("logs"), "logs_tourists")
+if (!dir.exists(log_path)) dir.create(log_path, recursive = TRUE)
 
 docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
