@@ -48,23 +48,18 @@ jobs:
 
       - name: Run all R scripts in 'scripts' folder
         run: |
-          SCRIPT_DIR="R_Scripts"
+          SCRIPT_DIR="scripts"
           
-          # Check if the scripts directory exists
           if [ ! -d "$SCRIPT_DIR" ]; then
             echo "Error: Directory '$SCRIPT_DIR' not found. Please create it or adjust the path."
             exit 1
           fi
 
-          # Find all R scripts in the directory (case-insensitive for .R and .r)
-          # Use -maxdepth 1 to only look in the specified directory, not subdirectories
-          # Sort them for consistent execution order
           R_SCRIPTS=$(find "$SCRIPT_DIR" -maxdepth 1 -type f \( -name "*.R" -o -name "*.r" \) | sort)
 
           if [ -z "$R_SCRIPTS" ]; then
             echo "No R scripts found in '$SCRIPT_DIR'. Skipping R script execution."
           else
-            # Loop through each found script and execute it
             for script_path in $R_SCRIPTS; do
               echo "--- Running R script: $script_path ---"
               Rscript "$script_path"
