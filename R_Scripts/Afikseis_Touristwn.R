@@ -15,7 +15,7 @@ docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
-log_path <- file.path(log_dir, paste0("tourists_log_", today_str, ".txt"))
+log_path <- file.path(log_path, paste0("tourists_log_", today_str, ".txt"))
 
 # --- API URL ---
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
