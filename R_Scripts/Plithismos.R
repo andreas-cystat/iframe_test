@@ -9,8 +9,7 @@ library(htmltools)
 library(here)
 
 # ---- Setup Directories ----
-log_base_dir <- here::here("Logs")
-log_dir <- here::here("Logs_plithismos")
+log_dir <- file.path(here::here("logs"), "logs_population")
 if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
 
 docs_dir <- here::here("docs")
