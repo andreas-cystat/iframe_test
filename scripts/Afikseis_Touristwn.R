@@ -6,6 +6,7 @@ library(tidyr)
 library(plotly)
 library(htmlwidgets)
 library(here)
+library(sodium)
 
 # --- Setup paths ---
 log_path <- file.path(here::here("logs"), "logs_tourists")
@@ -15,7 +16,7 @@ docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
-log_path <- file.path(log_path, paste0("tourists_log_", today_str, ".txt"))
+csv_log_path <- file.path(log_path, "log_tourists.csv")
 
 # --- API URL ---
 api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Tourism/Tourists/Monthly/2021012G.px"
@@ -83,31 +84,32 @@ df <- df %>%
 df_arithmos <- df %>% filter(measure == "Αριθμός")
 df_change <- df %>% filter(measure == "Ετήσια μεταβολή (%)")
 
-# --- Compare with last saved data frame ---
-# Count the number of rows
-current_data_points <- nrow(df_arithmos)
+# --- Combine both filtered data frames for hashing ---
+df_combined <- bind_rows(df_arithmos, df_change) %>%
+  arrange(year, measure, value)  
 
-# Function to get last saved count
-get_latest_logged_count <- function(log_file_path) {
-  if (!file.exists(log_file_path)) return(0)
-  log_lines <- readLines(log_file_path, warn = FALSE)
-  row_lines <- grep("Total number of rows:", log_lines, value = TRUE)
-  if (length(row_lines) == 0) return(0)
-  last_line <- row_lines[length(row_lines)]
-  match <- regmatches(last_line, regexpr("\\d+", last_line))
-  as.integer(match)
+# --- Compute hash of combined data ---
+df_raw <- serialize(df_combined, connection = NULL)
+current_hash <- sodium::bin2hex(sodium::hash(df_raw))
+
+# --- Read last saved hash from CSV ---
+last_hash <- NA
+if (file.exists(csv_log_path)) {
+  hash_log <- read.csv(csv_log_path, stringsAsFactors = FALSE)
+  if (nrow(hash_log) > 0) {
+    last_hash <- tail(hash_log$hash, 1)
+  }
 }
 
-# Compare to previous log
-last_saved_count <- get_latest_logged_count(log_path)
-update_status <- if (current_data_points > last_saved_count) {
-  "Widget updated with new data"
+# --- Compare hashes ---
+update_status <- if (!identical(current_hash, last_hash)) {
+  "CHANGED"
 } else {
-  "No new data"
+  "UNCHANGED"
 }
 
-# If new data, save widget
-if (update_status == "Widget updated with new data") {
+# --- Save widget if changed ---
+if (update_status == "CHANGED") {
   df_filtered <- df_arithmos
   n <- nrow(df_filtered)
   df_initial <- if (n >= 50) df_filtered[(n - 49):n, ] else df_filtered
@@ -161,7 +163,7 @@ if (update_status == "Widget updated with new data") {
       ),
       yaxis = list(title = "Αριθμός Αφίξεων")
     )
-
+  
   output_path <- file.path(docs_dir, paste0("tourists.html"))
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
   htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
@@ -169,12 +171,16 @@ if (update_status == "Widget updated with new data") {
 }
 
 # Logging block 
-log_con <- file(log_path, open = "at")  
+log_con <- file(csv_log_path, open = "at")  
 sink(log_con, type = "output")
 sink(log_con, type = "message")
 
-cat(format(Sys.time()), " | Total number of rows: ", current_data_points, "\n")
-cat(format(Sys.time()), " | ", update_status, "\n")
+cat(
+  format(Sys.time(), "%d/%m/%Y %H:%M"), "\t",
+  current_hash, "\t",
+  update_status, "\n",
+  sep = ""
+)
 
 sink(type = "message")
 sink(type = "output")
