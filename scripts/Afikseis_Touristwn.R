@@ -169,7 +169,7 @@ if (update_status == "Widget updated with new data") {
 }
 
 # Logging block 
-log_con <- file(log_path, open = "wt")  # "wt" = write text mode
+log_con <- file(log_path, open = "at")  
 sink(log_con, type = "output")
 sink(log_con, type = "message")
 
