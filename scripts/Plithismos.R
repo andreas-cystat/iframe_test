@@ -8,7 +8,7 @@ library(htmlwidgets)
 library(htmltools)
 library(here)
 library(sodium)  
-library(lubridate) 
+library(lubridate)
 
 # ---- Setup Directories ----
 log_dir <- file.path(here::here("logs"), "logs_population")
