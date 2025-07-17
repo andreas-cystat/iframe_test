@@ -44,7 +44,7 @@ jobs:
       - name: Install R dependencies
         run: |
           mkdir -p "$R_LIBS_USER"
-          R -e "install.packages(c('httr', 'jsonlite', 'dplyr', 'tidyr', 'plotly', 'htmlwidgets', 'here', 'sodium'), lib = Sys.getenv('R_LIBS_USER'), repos = Sys.getenv('RSPM'))"
+          R -e "install.packages(c('httr', 'jsonlite', 'dplyr', 'tidyr', 'plotly', 'htmlwidgets', 'here', 'sodium', 'lubridate'), lib = Sys.getenv('R_LIBS_USER'), repos = Sys.getenv('RSPM'))"
 
       - name: Run all R scripts in 'scripts' folder
         run: |
