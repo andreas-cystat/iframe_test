@@ -7,6 +7,8 @@ library(plotly)
 library(htmlwidgets)
 library(htmltools)
 library(here)
+library(sodium)  
+library(lubridate) 
 
 # ---- Setup Directories ----
 log_dir <- file.path(here::here("logs"), "logs_population")
@@ -16,7 +18,7 @@ docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
 today_str <- format(Sys.Date(), "%Y%m%d")
-log_path <- file.path(log_dir, paste0("log_", today_str, ".txt"))
+csv_log_path <- file.path(log_dir, "logs_population.csv")  
 
 # PART 1: POPULATION PLOT
 # ---- Population API Info ----
@@ -45,6 +47,7 @@ pop_query <- list(
   response = list(format = "json")
 )
 
+# --- Fetch data ---
 pop_response <- httr::POST(pop_api_url, body = pop_query, encode = "json")
 httr::stop_for_status(pop_response)
 pop_data <- httr::content(pop_response, as = "parsed", simplifyDataFrame = TRUE)
@@ -58,6 +61,7 @@ df_pop <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# --- Prepare data frame ---
 year_labels <- setNames(year_var$valueTexts, year_var$values)
 df_pop$year <- year_labels[df_pop$year_code]
 
@@ -79,19 +83,19 @@ population_widget <- plotly::plot_ly() %>%
     title = "Πληθυσμός στις Περιοχές που Ελέγχει το Κράτος (χιλιάδες)",
     xaxis = list(
       title = "Έτος",
-      range = c(2000, max(as.numeric(df_pop$year), na.rm = TRUE)),
-      rangeslider = list(visible = TRUE)
+      range = c(2000, max(as.numeric(df_pop$year), na.rm = TRUE))
     ),
     yaxis = list(title = ""),
     hovermode = "x unified"
   ) %>%
   config(displayModeBar = FALSE)
 
+# Save standalone population widget
 output_path <- file.path(docs_dir, "population.html")
 dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
 htmlwidgets::saveWidget(population_widget, output_path, selfcontained = TRUE)
 message("✅ Standalone population widget saved to: ", output_path)
-  
+
 # PART 2: LIFE EXPECTANCY PLOT
 # ---- Life Expectancy API Info ----
 life_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Deaths/1830226G.px"
@@ -99,9 +103,11 @@ life_metadata <- httr::GET(life_api_url)
 httr::stop_for_status(life_metadata)
 life_meta_json <- httr::content(life_metadata, as = "parsed")
 
+# ---- Extract Variables ----
 year_dim <- life_meta_json$variables[[1]]
 gender_dim <- life_meta_json$variables[[2]]
 
+# ---- Build Query and Get Data ----
 query_life <- list(
   query = list(
     list(code = year_dim$code, selection = list(filter = "item", values = year_dim$values)),
@@ -110,10 +116,12 @@ query_life <- list(
   response = list(format = "json")
 )
 
+# --- Fetch data ---
 life_response <- httr::POST(life_api_url, body = query_life, encode = "json")
 httr::stop_for_status(life_response)
 life_data <- httr::content(life_response, as = "parsed", simplifyDataFrame = TRUE)
 
+# --- Prepare data frame ---
 df_life <- data.frame(
   year_code = sapply(life_data$data$key, function(k) k[1]),
   gender_code = sapply(life_data$data$key, function(k) k[2]),
@@ -175,12 +183,11 @@ dir.create(dirname(life_output_path), showWarnings = FALSE, recursive = TRUE)
 htmlwidgets::saveWidget(life_expectancy_widget, life_output_path, selfcontained = TRUE)
 message("✅ Standalone life expectancy widget saved to: ", life_output_path)
 
-# COMBINE AND SAVE
-# Ensure fixed sizes to avoid layout issues
+# ----Combine Widgets ----
 population_widget <- population_widget %>% layout(width = 600, height = 400)
 life_expectancy_widget <- life_expectancy_widget %>% layout(width = 600, height = 400)
 
-# Create side-by-side layout using flexbox
+# Create side-by-side layout 
 combined_html <- tagList(
   tags$div(
     style = "display: flex; gap: 0px; justify-content: center;",
@@ -189,18 +196,43 @@ combined_html <- tagList(
   )
 )
 
-# Save log file using htmltools
-log_messages <- c(
-  paste0("Script executed successfully on ", Sys.time()),
-  paste0("Population data rows: ", nrow(df_pop)),
-  paste0("Life expectancy data rows: ", nrow(df_life))
-)
-
-writeLines(log_messages, log_path)
-
-# Save combined widget using htmltools 
 combined_path <- file.path(docs_dir, "combined_graphs.html")
 htmltools::save_html(combined_html, file = combined_path)
-
 message("✅ Combined widget saved to: ", combined_path)
+
+# --- Compute hash of combined data ---
+combined_data <- list(df_pop = df_pop, df_life_wide = df_life_wide)
+combined_raw <- serialize(combined_data, connection = NULL)
+combined_hash <- sodium::bin2hex(sodium::hash(combined_raw))
+
+update_status <- if (file.exists(csv_log_path)) {
+  previous_lines <- readLines(csv_log_path)
+  last_line <- tail(previous_lines, 1)
+  last_hash <- strsplit(last_line, "\t")[[1]][2]
+  if (!is.null(last_hash) && last_hash == combined_hash) "UNCHANGED" else "CHANGED"
+} else {
+  "CHANGED"
+}
+
+# Logging block 
+if (!file.exists(csv_log_path)) {
+  writeLines("timestamp\tcombined_hash\tstatus", csv_log_path)
+}
+
+log_con <- file(csv_log_path, open = "at")
+sink(log_con, type = "output")
+sink(log_con, type = "message")
+
+cat(
+  format(Sys.time(), "%d/%m/%Y %H:%M"), "\t",
+  combined_hash, "\t",
+  update_status, "\n",
+  sep = ""
+)
+
+sink(type = "message")
+sink(type = "output")
+close(log_con)
+
+
 
