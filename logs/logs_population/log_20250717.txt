@@ -1,0 +1,3 @@
+Script executed successfully on 2025-07-17 02:03:43
+Population data rows: 32
+Life expectancy data rows: 44
