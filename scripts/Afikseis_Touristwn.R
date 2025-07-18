@@ -109,7 +109,7 @@ update_status <- if (file.exists(csv_log_path)) {
   if (!is.null(last_hash) && last_hash == current_hash) "UNCHANGED" else "CHANGED"
 } else {
   "CHANGED"
-}
+} 
 
 # --- Save widget if changed ---
 if (update_status == "CHANGED") {
