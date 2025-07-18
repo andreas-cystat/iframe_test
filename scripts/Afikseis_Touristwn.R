@@ -102,10 +102,13 @@ if (file.exists(csv_log_path)) {
 }
 
 # --- Compare hashes ---
-update_status <- if (!identical(current_hash, last_hash)) {
-  "CHANGED"
+update_status <- if (file.exists(csv_log_path)) {
+  previous_lines <- readLines(csv_log_path)
+  last_line <- tail(previous_lines, 1)
+  last_hash <- strsplit(last_line, "\t")[[1]][2]
+  if (!is.null(last_hash) && last_hash == current_hash) "UNCHANGED" else "CHANGED"
 } else {
-  "UNCHANGED"
+  "CHANGED"
 }
 
 # --- Save widget if changed ---
@@ -170,7 +173,7 @@ if (update_status == "CHANGED") {
   message("Widget saved to ", output_path)
 }
 
-# Logging block 
+# Logging block                   
 log_con <- file(csv_log_path, open = "at")  
 sink(log_con, type = "output")
 sink(log_con, type = "message")
