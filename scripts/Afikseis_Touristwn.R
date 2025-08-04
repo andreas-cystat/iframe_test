@@ -101,7 +101,6 @@ if (file.exists(csv_log_path)) {
   }
 }
 
-
 # --- Compare hashes ---
 update_status <- if (file.exists(csv_log_path)) {
   previous_lines <- readLines(csv_log_path)
