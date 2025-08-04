@@ -95,12 +95,11 @@ current_hash <- sodium::bin2hex(sodium::hash(df_raw))
 # --- Read last saved hash from CSV ---
 last_hash <- NA
 if (file.exists(csv_log_path)) {
-  hash_log <- read.delim(csv_log_path, sep = "\t", stringsAsFactors = FALSE)
+  hash_log <- read.csv(csv_log_path, stringsAsFactors = FALSE)
   if (nrow(hash_log) > 0) {
     last_hash <- tail(hash_log$hash, 1)
   }
 }
-
 
 # --- Compare hashes ---
 update_status <- if (file.exists(csv_log_path)) {
@@ -170,11 +169,8 @@ if (update_status == "CHANGED") {
   
   output_path <- file.path(docs_dir, paste0("tourists.html"))
   dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  
-  if (update_status == "CHANGED" || !file.exists(output_path)) {
-    htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
-    message("Widget saved to ", output_path)
-  }
+  htmlwidgets::saveWidget(fig, output_path, selfcontained = TRUE)
+  message("Widget saved to ", output_path)
 }
 
 # Logging block                   
@@ -188,7 +184,7 @@ cat(
   update_status, "\n",
   sep = ""
 )
-                     
+
 sink(type = "message")
 sink(type = "output")
 close(log_con)
