@@ -187,7 +187,7 @@ cat(
   update_status, "\n",
   sep = ""
 )
-                     
+
 sink(type = "message")
 sink(type = "output")
 close(log_con)
