@@ -28,21 +28,20 @@ httr::stop_for_status(pop_metadata)
 pop_meta_json <- httr::content(pop_metadata, as = "parsed")
 
 # ---- Extract Variables ----
-variables <- pop_meta_json$variables
-gender_var <- variables[[which(sapply(variables, function(v) v$code) == "ΦΥΛΟ")]]
-age_var    <- variables[[which(sapply(variables, function(v) v$code) == "ΗΛΙΚΙΑ")]]
-year_var   <- variables[[which(sapply(variables, function(v) v$code) == "ΕΤΟΣ")]]
+year_var <- variables[[which(sapply(variables, function(v) v$code) == "ΕΤΟΣ")]]
+period_var <- variables[[which(sapply(variables, function(v) v$code) == "ΠΕΡΙΟΔΟΣ")]]
+pop_type_var <- variables[[which(sapply(variables, function(v) v$code) == "ΠΛΗΘΥΣΜΟΣ/ΠΟΣΟΣΤΙΑΙΑ ΜΕΤΑΒΟΛΗ")]]
 
-gender_code <- "0"   
-age_code <- "0"     
+period_code <- "0"   
+pop_type_code <- "0"     
 year_codes <- year_var$values
 
 # ---- Build Query and Get Data ----
 pop_query <- list(
   query = list(
-    list(code = gender_var$code, selection = list(filter = "item", values = list(gender_code))),
-    list(code = age_var$code, selection = list(filter = "item", values = list(age_code))),
-    list(code = year_var$code, selection = list(filter = "item", values = year_codes))
+    list(code = year_var$code, selection = list(filter = "item", values = year_codes)),
+    list(code = period_var$code, selection = list(filter = "item", values = list(period_code))),
+    list(code = pop_type_var$code, selection = list(filter = "item", values = list(pop_type_code)))
   ),
   response = list(format = "json")
 )
@@ -53,7 +52,7 @@ httr::stop_for_status(pop_response)
 pop_data <- httr::content(pop_response, as = "parsed", simplifyDataFrame = TRUE)
 
 df_pop <- data.frame(
-  year_code = sapply(pop_data$data$key, function(k) k[[3]]),
+  year_code = sapply(pop_data$data$key, function(k) k[[1]]),
   value = sapply(pop_data$data$values, function(v) {
     if (is.null(v) || is.na(v) || v == "..") return(NA_real_)
     as.numeric(gsub(",", ".", v))
