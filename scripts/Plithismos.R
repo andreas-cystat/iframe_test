@@ -90,12 +90,6 @@ population_widget <- plotly::plot_ly() %>%
   ) %>%
   config(displayModeBar = FALSE)
 
-# Save standalone population widget
-output_path <- file.path(docs_dir, "population.html")
-dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-htmlwidgets::saveWidget(population_widget, output_path, selfcontained = TRUE)
-message("✅ Standalone population widget saved to: ", output_path)
-
 # PART 2: LIFE EXPECTANCY PLOT
 # ---- Life Expectancy API Info ----
 life_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Deaths/1830226G.px"
@@ -177,41 +171,51 @@ life_expectancy_widget <- plotly::plot_ly() %>%
   ) %>%
   config(displayModeBar = FALSE)
 
-# Save standalone life expectancy widget
-life_output_path <- file.path(docs_dir, "life_expectancy.html")
-dir.create(dirname(life_output_path), showWarnings = FALSE, recursive = TRUE)
-htmlwidgets::saveWidget(life_expectancy_widget, life_output_path, selfcontained = TRUE)
-message("✅ Standalone life expectancy widget saved to: ", life_output_path)
-
-# ----Combine Widgets ----
-population_widget <- population_widget %>% layout(width = 600, height = 400)
-life_expectancy_widget <- life_expectancy_widget %>% layout(width = 600, height = 400)
-
-# Create side-by-side layout 
-combined_html <- tagList(
-  tags$div(
-    style = "display: flex; gap: 0px; justify-content: center;",
-    tags$div(style = "flex: 1;", population_widget),
-    tags$div(style = "flex: 1;", life_expectancy_widget)
-  )
-)
-
-combined_path <- file.path(docs_dir, "combined_graphs.html")
-htmltools::save_html(combined_html, file = combined_path)
-message("✅ Combined widget saved to: ", combined_path)
-
 # --- Compute hash of combined data ---
 combined_data <- list(df_pop = df_pop, df_life_wide = df_life_wide)
 combined_raw <- serialize(combined_data, connection = NULL)
 combined_hash <- sodium::bin2hex(sodium::hash(combined_raw))
 
-update_status <- if (file.exists(csv_log_path)) {
-  previous_lines <- readLines(csv_log_path)
-  last_line <- tail(previous_lines, 1)
-  last_hash <- strsplit(last_line, "\t")[[1]][2]
-  if (!is.null(last_hash) && last_hash == combined_hash) "UNCHANGED" else "CHANGED"
-} else {
-  "CHANGED"
+last_hash <- NA
+if (file.exists(csv_log_path)) {
+  hash_log <- read.delim(csv_log_path, sep = "\t", stringsAsFactors = FALSE)
+  if (nrow(hash_log) > 0) {
+    last_hash <- tail(hash_log$combined_hash, 1)
+  }
+}
+
+update_status <- if (!is.na(last_hash) && last_hash == combined_hash) "UNCHANGED" else "CHANGED"
+
+# Save widgets and combine them only if data changed
+if (update_status == "CHANGED") {
+  # Save standalone population widget
+  output_path <- file.path(docs_dir, "population.html")
+  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
+  htmlwidgets::saveWidget(population_widget, output_path, selfcontained = TRUE)
+  message("✅ Standalone population widget saved to: ", output_path)
+  
+  # Save standalone life expectancy widget
+  life_output_path <- file.path(docs_dir, "life_expectancy.html")
+  dir.create(dirname(life_output_path), showWarnings = FALSE, recursive = TRUE)
+  htmlwidgets::saveWidget(life_expectancy_widget, life_output_path, selfcontained = TRUE)
+  message("✅ Standalone life expectancy widget saved to: ", life_output_path)
+  
+  # ----Combine Widgets ----
+  population_widget <- population_widget %>% layout(width = 600, height = 400)
+  life_expectancy_widget <- life_expectancy_widget %>% layout(width = 600, height = 400)
+  
+  # Create side-by-side layout 
+  combined_html <- tagList(
+    tags$div(
+      style = "display: flex; gap: 0px; justify-content: center;",
+      tags$div(style = "flex: 1;", population_widget),
+      tags$div(style = "flex: 1;", life_expectancy_widget)
+    )
+  )
+  
+  combined_path <- file.path(docs_dir, "combined_graphs.html")
+  htmltools::save_html(combined_html, file = combined_path)
+  message("✅ Combined widget saved to: ", combined_path)
 }
 
 # Logging block 
@@ -233,6 +237,3 @@ cat(
 sink(type = "message")
 sink(type = "output")
 close(log_con)
-
-
-
