@@ -28,6 +28,7 @@ httr::stop_for_status(pop_metadata)
 pop_meta_json <- httr::content(pop_metadata, as = "parsed")
 
 # ---- Extract Variables ----
+variables <- pop_meta_json$variables
 year_var <- variables[[which(sapply(variables, function(v) v$code) == "ΕΤΟΣ")]]
 period_var <- variables[[which(sapply(variables, function(v) v$code) == "ΠΕΡΙΟΔΟΣ")]]
 pop_type_var <- variables[[which(sapply(variables, function(v) v$code) == "ΠΛΗΘΥΣΜΟΣ/ΠΟΣΟΣΤΙΑΙΑ ΜΕΤΑΒΟΛΗ")]]
