@@ -7,7 +7,7 @@ library(plotly)
 library(htmlwidgets)
 library(htmltools)
 library(here)
-library(sodium)  
+library(sodium)
 library(lubridate)
 
 # ---- Setup Directories ----
@@ -17,91 +17,39 @@ if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
 docs_dir <- here::here("docs")
 if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 
-today_str <- format(Sys.Date(), "%Y%m%d")
-csv_log_path <- file.path(log_dir, "logs_population.csv")  
+csv_log_path <- file.path(log_dir, "logs_population.csv")
 
-# PART 1: POPULATION PLOT
-# ---- Population API Info ----
+# ---- Population API ----
 pop_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Population/1820010G.px"
-pop_metadata <- httr::GET(pop_api_url)
-httr::stop_for_status(pop_metadata)
-pop_meta_json <- httr::content(pop_metadata, as = "parsed")
+pop_meta <- httr::content(httr::GET(pop_api_url), as = "parsed")
+year_var <- pop_meta$variables[[1]]
+period_var <- pop_meta$variables[[2]]
+pop_type_var <- pop_meta$variables[[3]]
 
-# ---- Extract Variables ----
-variables <- pop_meta_json$variables
-year_var <- variables[[which(sapply(variables, function(v) v$code) == "ΕΤΟΣ")]]
-period_var <- variables[[which(sapply(variables, function(v) v$code) == "ΠΕΡΙΟΔΟΣ")]]
-pop_type_var <- variables[[which(sapply(variables, function(v) v$code) == "ΠΛΗΘΥΣΜΟΣ/ΠΟΣΟΣΤΙΑΙΑ ΜΕΤΑΒΟΛΗ")]]
-
-period_code <- "0"   
-pop_type_code <- "0"     
-year_codes <- year_var$values
-
-# ---- Build Query and Get Data ----
 pop_query <- list(
   query = list(
-    list(code = year_var$code, selection = list(filter = "item", values = year_codes)),
-    list(code = period_var$code, selection = list(filter = "item", values = list(period_code))),
-    list(code = pop_type_var$code, selection = list(filter = "item", values = list(pop_type_code)))
+    list(code = year_var$code, selection = list(filter = "item", values = year_var$values)),
+    list(code = period_var$code, selection = list(filter = "item", values = list("0"))),
+    list(code = pop_type_var$code, selection = list(filter = "item", values = list("0")))
   ),
   response = list(format = "json")
 )
 
-# --- Fetch data ---
-pop_response <- httr::POST(pop_api_url, body = pop_query, encode = "json")
-httr::stop_for_status(pop_response)
-pop_data <- httr::content(pop_response, as = "parsed", simplifyDataFrame = TRUE)
-
+pop_data <- httr::content(httr::POST(pop_api_url, body = pop_query, encode = "json"), as = "parsed", simplifyDataFrame = TRUE)
 df_pop <- data.frame(
   year_code = sapply(pop_data$data$key, function(k) k[[1]]),
-  value = sapply(pop_data$data$values, function(v) {
-    if (is.null(v) || is.na(v) || v == "..") return(NA_real_)
-    as.numeric(gsub(",", ".", v))
-  }),
-  stringsAsFactors = FALSE
+  value = sapply(pop_data$data$values, function(v) ifelse(is.null(v) || v == "..", NA, as.numeric(gsub(",", ".", v))))
 )
-
-# --- Prepare data frame ---
 year_labels <- setNames(year_var$valueTexts, year_var$values)
 df_pop$year <- year_labels[df_pop$year_code]
+df_pop <- df_pop %>% select(year, value) %>% arrange(year)
 
-df_pop <- df_pop %>%
-  select(year, value) %>%
-  arrange(year)
-
-# ---- Create Population Widget ----
-population_widget <- plotly::plot_ly() %>%
-  add_trace(
-    data = df_pop,
-    x = ~as.numeric(year),
-    y = ~value,
-    type = 'scatter',
-    mode = 'lines',
-    line = list(color = 'orange', width = 3)
-  ) %>%
-  layout(
-    title = "Πληθυσμός στις Περιοχές που Ελέγχει το Κράτος (χιλιάδες)",
-    xaxis = list(
-      title = "Έτος",
-      range = c(2000, max(as.numeric(df_pop$year), na.rm = TRUE))
-    ),
-    yaxis = list(title = ""),
-    hovermode = "x unified"
-  ) %>%
-  config(displayModeBar = FALSE)
-
-# PART 2: LIFE EXPECTANCY PLOT
-# ---- Life Expectancy API Info ----
+# ---- Life Expectancy API ----
 life_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Deaths/1830226G.px"
-life_metadata <- httr::GET(life_api_url)
-httr::stop_for_status(life_metadata)
-life_meta_json <- httr::content(life_metadata, as = "parsed")
+life_meta <- httr::content(httr::GET(life_api_url), as = "parsed")
+year_dim <- life_meta$variables[[1]]
+gender_dim <- life_meta$variables[[2]]
 
-# ---- Extract Variables ----
-year_dim <- life_meta_json$variables[[1]]
-gender_dim <- life_meta_json$variables[[2]]
-
-# ---- Build Query and Get Data ----
 query_life <- list(
   query = list(
     list(code = year_dim$code, selection = list(filter = "item", values = year_dim$values)),
@@ -110,101 +58,93 @@ query_life <- list(
   response = list(format = "json")
 )
 
-# --- Fetch data ---
-life_response <- httr::POST(life_api_url, body = query_life, encode = "json")
-httr::stop_for_status(life_response)
-life_data <- httr::content(life_response, as = "parsed", simplifyDataFrame = TRUE)
-
-# --- Prepare data frame ---
+life_data <- httr::content(httr::POST(life_api_url, body = query_life, encode = "json"), as = "parsed", simplifyDataFrame = TRUE)
 df_life <- data.frame(
   year_code = sapply(life_data$data$key, function(k) k[1]),
   gender_code = sapply(life_data$data$key, function(k) k[2]),
-  value = sapply(life_data$data$values, function(v) {
-    if (is.null(v) || is.na(v) || v == "..") return(NA_real_)
-    as.numeric(v)
-  }),
-  stringsAsFactors = FALSE
+  value = sapply(life_data$data$values, function(v) ifelse(is.null(v) || v == "..", NA, as.numeric(v)))
 )
 
 year_labels_life <- setNames(year_dim$valueTexts, year_dim$values)
 gender_labels_life <- setNames(gender_dim$valueTexts, gender_dim$values)
-
 df_life$year <- as.integer(year_labels_life[df_life$year_code])
 df_life$gender <- gender_labels_life[df_life$gender_code]
 
 max_year <- max(df_life$year, na.rm = TRUE)
-
 df_life_wide <- df_life %>%
   filter(year >= max_year - 9) %>%
   select(year, gender, value) %>%
   pivot_wider(names_from = gender, values_from = value) %>%
   arrange(year)
 
-# ---- Create Life Expectancy Widget ----
-life_expectancy_widget <- plotly::plot_ly() %>%
-  add_trace(
-    x = df_life_wide$Άντρες,
-    y = df_life_wide$year,
-    type = 'bar',
-    name = 'Άντρες',
-    orientation = 'h',
-    marker = list(color = 'blue'),
-    text = df_life_wide$Άντρες,
-    textposition = 'outside'
-  ) %>%
-  add_trace(
-    x = df_life_wide$Γυναίκες,
-    y = df_life_wide$year,
-    type = 'bar',
-    name = 'Γυναίκες',
-    orientation = 'h',
-    marker = list(color = '#D1006C'),
-    text = df_life_wide$Γυναίκες,
-    textposition = 'outside'
-  ) %>%
-  layout(
-    title = "Προσδοκώμενη Διάρκεια Ζωής στη Γέννηση (χρόνια)",
-    xaxis = list(title = 'Έτη', range = c(70, 86), dtick = 2),
-    yaxis = list(title = 'Έτος', tickvals = df_life_wide$year),
-    barmode = 'group',
-    template = "plotly_white"
-  ) %>%
-  config(displayModeBar = FALSE)
-
-# --- Compute hash of combined data ---
+# ---- Compute Hash ----
 combined_data <- list(df_pop = df_pop, df_life_wide = df_life_wide)
 combined_raw <- serialize(combined_data, connection = NULL)
 combined_hash <- sodium::bin2hex(sodium::hash(combined_raw))
 
+# ---- Compare Hashes ----
 last_hash <- NA
 if (file.exists(csv_log_path)) {
   hash_log <- read.delim(csv_log_path, sep = "\t", stringsAsFactors = FALSE)
-  if (nrow(hash_log) > 0) {
+  if ("combined_hash" %in% names(hash_log) && nrow(hash_log) > 0) {
     last_hash <- tail(hash_log$combined_hash, 1)
   }
 }
-
 update_status <- if (!is.na(last_hash) && last_hash == combined_hash) "UNCHANGED" else "CHANGED"
 
-# Save widgets and combine them only if data changed
+# ---- Only Save If Changed ----
 if (update_status == "CHANGED") {
-  # Save standalone population widget
-  output_path <- file.path(docs_dir, "population.html")
-  dir.create(dirname(output_path), showWarnings = FALSE, recursive = TRUE)
-  htmlwidgets::saveWidget(population_widget, output_path, selfcontained = TRUE)
-  message("✅ Standalone population widget saved to: ", output_path)
+  # Population Plot
+  population_widget <- plot_ly(df_pop) %>%
+    add_trace(
+      x = ~as.numeric(year), y = ~value,
+      type = 'scatter', mode = 'lines',
+      line = list(color = 'orange', width = 3)
+    ) %>%
+    layout(
+      title = "Πληθυσμός στις Περιοχές που Ελέγχει το Κράτος (χιλιάδες)",
+      xaxis = list(title = "Έτος", range = c(2000, max(as.numeric(df_pop$year), na.rm = TRUE))),
+      yaxis = list(title = ""),
+      hovermode = "x unified"
+    ) %>%
+    config(displayModeBar = FALSE)
   
-  # Save standalone life expectancy widget
-  life_output_path <- file.path(docs_dir, "life_expectancy.html")
-  dir.create(dirname(life_output_path), showWarnings = FALSE, recursive = TRUE)
-  htmlwidgets::saveWidget(life_expectancy_widget, life_output_path, selfcontained = TRUE)
-  message("✅ Standalone life expectancy widget saved to: ", life_output_path)
+  # Life Expectancy Plot
+  life_expectancy_widget <- plot_ly() %>%
+    add_trace(
+      x = df_life_wide$Άντρες,
+      y = df_life_wide$year,
+      type = 'bar',
+      name = 'Άντρες',
+      orientation = 'h',
+      marker = list(color = 'blue'),
+      text = df_life_wide$Άντρες,
+      textposition = 'outside'
+    ) %>%
+    add_trace(
+      x = df_life_wide$Γυναίκες,
+      y = df_life_wide$year,
+      type = 'bar',
+      name = 'Γυναίκες',
+      orientation = 'h',
+      marker = list(color = '#D1006C'),
+      text = df_life_wide$Γυναίκες,
+      textposition = 'outside'
+    ) %>%
+    layout(
+      title = "Προσδοκώμενη Διάρκεια Ζωής στη Γέννηση (χρόνια)",
+      xaxis = list(title = 'Έτη', range = c(70, 86), dtick = 2),
+      yaxis = list(title = 'Έτος'),
+      barmode = 'group',
+      template = "plotly_white"
+    ) %>%
+    config(displayModeBar = FALSE)
   
-  # ----Combine Widgets ----
-  population_widget <- population_widget %>% layout(width = 600, height = 400)
-  life_expectancy_widget <- life_expectancy_widget %>% layout(width = 600, height = 400)
+  # Save widgets
+  htmlwidgets::saveWidget(population_widget, file.path(docs_dir, "population.html"), selfcontained = TRUE)
+  htmlwidgets::saveWidget(life_expectancy_widget, file.path(docs_dir, "life_expectancy.html"), selfcontained = TRUE)
   
-  # Create side-by-side layout 
+  # Combined layout
   combined_html <- tagList(
     tags$div(
       style = "display: flex; gap: 0px; justify-content: center;",
@@ -213,27 +153,13 @@ if (update_status == "CHANGED") {
     )
   )
   
-  combined_path <- file.path(docs_dir, "combined_graphs.html")
-  htmltools::save_html(combined_html, file = combined_path)
-  message("✅ Combined widget saved to: ", combined_path)
+  htmltools::save_html(combined_html, file = file.path(docs_dir, "combined_graphs.html"))
+  message("✅ Widgets updated and saved.")
 }
 
-# Logging block 
+# ---- Logging ----
 if (!file.exists(csv_log_path)) {
   writeLines("timestamp\tcombined_hash\tstatus", csv_log_path)
 }
-
-log_con <- file(csv_log_path, open = "at")
-sink(log_con, type = "output")
-sink(log_con, type = "message")
-
-cat(
-  format(Sys.time(), "%d/%m/%Y %H:%M"), "\t",
-  combined_hash, "\t",
-  update_status, "\n",
-  sep = ""
-)
-
-sink(type = "message")
-sink(type = "output")
-close(log_con)
+log_entry <- paste(format(Sys.time(), "%d/%m/%Y %H:%M"), combined_hash, update_status, sep = "\t")
+write(log_entry, file = csv_log_path, append = TRUE)
