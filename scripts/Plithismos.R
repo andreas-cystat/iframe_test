@@ -20,7 +20,7 @@ if (!dir.exists(docs_dir)) dir.create(docs_dir, recursive = TRUE)
 csv_log_path <- file.path(log_dir, "logs_population.csv")
 
 # ---- Population API ----
-pop_api_url <- "https://cystatdb.cystat.gov.cy:443/api/v1/el/8.CYSTAT-DB/Population/Population/1820010G.px"
+pop_api_url <- "https://cystatdb23px.cystat.gov.cy/api/v1/el/8.CYSTAT-DB/Population/Population/1820010G.px"
 pop_meta <- httr::content(httr::GET(pop_api_url), as = "parsed")
 year_var <- pop_meta$variables[[1]]
 period_var <- pop_meta$variables[[2]]
@@ -90,6 +90,7 @@ if (file.exists(csv_log_path)) {
     last_hash <- tail(hash_log$combined_hash, 1)
   }
 }
+                       
 update_status <- if (!is.na(last_hash) && last_hash == combined_hash) "UNCHANGED" else "CHANGED"
 
 # ---- Only Save If Changed ----
@@ -161,5 +162,6 @@ if (update_status == "CHANGED") {
 if (!file.exists(csv_log_path)) {
   writeLines("timestamp\tcombined_hash\tstatus", csv_log_path)
 }
+                       
 log_entry <- paste(format(Sys.time(), "%d/%m/%Y %H:%M"), combined_hash, update_status, sep = "\t")
 write(log_entry, file = csv_log_path, append = TRUE)
